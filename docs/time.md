@@ -47,12 +47,12 @@ Response:
 ---
 
 ```
-GET /time/unix/seconds/:t
+GET /time/unix/:t
 ```
 
 > Converts a unix timestamp (seconds) to various formats
 
-Example: `/time/unix/seconds/1709884384`
+Example: `/time/unix/1709884384`
 
 Response:
 
