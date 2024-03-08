@@ -1,11 +1,13 @@
 import { Hono } from "hono";
 import { logger } from "hono/logger";
+import { cors } from "hono/cors";
 
 // create a new instance of Hono
 const app = new Hono();
 
 // middleware
 app.use(logger());
+app.use("*", cors());
 
 // routes
 import math from "./routes/math";
