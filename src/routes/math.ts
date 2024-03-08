@@ -109,7 +109,7 @@ math.get("/factorial/:number", (c) => {
         factorial *= i;
     }
 
-    return c.json({ factorial, message: `${number}! = ${factorial}` });
+    return c.json({ number: factorial, message: `${number}! = ${factorial}` });
 });
 
 // GET /math/sqrt/:number
