@@ -4,9 +4,11 @@
     "type": "module",
     "scripts": {
         "dev": "bun run --hot src/index.ts",
-        "start": "bun run src/index.ts"
+        "start": "bun run src/index.ts",
+        "deploy": "fly deploy"
     },
     "devDependencies": {
+        "@flydotio/dockerfile": "latest",
         "@types/bun": "latest"
     },
     "peerDependencies": {
