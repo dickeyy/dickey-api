@@ -4,16 +4,11 @@ A fun little API I made for random stuff.
 
 ## Docs
 
-The API is broken up into multiple categories. Below you will find the documentation for all endpoints.
+Documentation can be found [here](https://docs.dickey.gg/dickey-api)
+([docs.dickey.gg/dickey-api](https://docs.dickey.gg/dickey-api)).
 
 **Base URL**
 
 ```
 https://api.dickey.gg
 ```
-
-[Math Endpoints](docs/math.md)
-
-[Time Endpoints](docs/time.md)
-
-[Text Endpoints](docs/text.md)
