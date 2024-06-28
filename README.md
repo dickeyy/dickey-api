@@ -10,5 +10,5 @@ Documentation can be found [here](https://docs.dickey.gg/dickey-api)
 **Base URL**
 
 ```
-https://api.dickey.gg
+https://api.kyle.so
 ```
