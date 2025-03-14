@@ -73,6 +73,9 @@ func main() {
 	// time routes
 	app.Get("/time/now", routes.Now)
 
+	// spotify routes
+	app.Get("/spotify/current-track", routes.GetCurrentTrack)
+
 	// start server
 	err := app.Listen(getPort())
 	if err != nil {
