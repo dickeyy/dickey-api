@@ -5,6 +5,7 @@ import (
 
 	"github.com/dickeyy/dickey-api/routes"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/joho/godotenv"
 	log "github.com/sirupsen/logrus"
 )
@@ -39,8 +40,14 @@ func getPort() string {
 // main function
 func main() {
 
+	// Configure CORS to allow requests from any origin
+	app.Use(cors.New(cors.Config{
+		AllowOrigins: "*",
+		AllowHeaders: "Origin, Content-Type, Accept",
+	}))
+
 	app.Get("/", func(c *fiber.Ctx) error {
-		return c.SendString("docs at https://docs.dickey.gg")
+		return c.SendString("docs at https://docs.kyle.so")
 	})
 
 	// math routes
