@@ -2,7 +2,10 @@ package main
 
 import (
 	"os"
+	"os/signal"
+	"syscall"
 
+	"github.com/dickeyy/dickey-api/cache"
 	"github.com/dickeyy/dickey-api/routes"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -39,6 +42,28 @@ func getPort() string {
 
 // main function
 func main() {
+	// Initialize the Last.fm cache
+	lastFmCache := cache.GetLastFmCache()
+	log.Info("Last.fm cache initialized")
+
+	// Set up graceful shutdown
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-c
+		log.Info("Shutting down...")
+
+		// Close the cache
+		lastFmCache.Close()
+		log.Info("Cache closed")
+
+		// Shutdown the server
+		if err := app.Shutdown(); err != nil {
+			log.Panic(err)
+		}
+		log.Info("Server shutdown complete")
+		os.Exit(0)
+	}()
 
 	// Configure CORS to allow requests from any origin
 	app.Use(cors.New(cors.Config{
