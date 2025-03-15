@@ -6,9 +6,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/dickeyy/dickey-api/cache"
 	"github.com/gofiber/fiber/v2"
-	log "github.com/sirupsen/logrus"
 )
 
 // Last.fm api keys are designed to be public so we can hard code the key here
@@ -51,39 +49,14 @@ type NowPlayingResponse struct {
 func GetCurrentTrack(c *fiber.Ctx) error {
 	// get the user from the query params
 	user := c.Query("user")
-
 	if user == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "User is required",
 		})
 	}
 
-	// Generate cache key
-	cacheKey := cache.GenerateLastFmCacheKey("user.getrecenttracks", user)
-
-	// Try to get from cache first
-	lastFmCache := cache.GetLastFmCache()
-	if cachedData, found := lastFmCache.Get(cacheKey); found {
-		// If found in cache, return the cached response
-		log.WithFields(log.Fields{
-			"user": user,
-			"type": "cache_hit",
-		}).Info("Returning cached Last.fm data")
-		return c.JSON(cachedData)
-	}
-
-	// If not in cache, make the API request
-	log.WithFields(log.Fields{
-		"user": user,
-		"type": "cache_miss",
-	}).Info("Fetching fresh Last.fm data")
-
 	response, err := http.Get(constructLastFmAPIUrl("user.getrecenttracks", user))
 	if err != nil {
-		log.WithFields(log.Fields{
-			"user":  user,
-			"error": err.Error(),
-		}).Error("Failed to get current track from Last.fm")
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to get current track",
 		})
@@ -142,13 +115,6 @@ func GetCurrentTrack(c *fiber.Ctx) error {
 		IsPlaying: isPlaying,
 		ImageURL:  imageURL,
 	}
-
-	// Store the response in cache before returning
-	lastFmCache.Set(cacheKey, nowPlaying)
-	log.WithFields(log.Fields{
-		"user": user,
-		"type": "cache_store",
-	}).Info("Stored Last.fm data in cache")
 
 	// Return both the formatted response and the raw Last.fm data
 	return c.JSON(nowPlaying)
