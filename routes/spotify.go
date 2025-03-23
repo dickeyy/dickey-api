@@ -74,6 +74,7 @@ func HandleSpotifyWebSocket(c *websocket.Conn) {
 
 	// Track the last sent track to avoid duplicate messages
 	var lastTrack *NowPlayingResponse
+	var lastMessage string
 
 	// Start polling for track updates
 	ticker := time.NewTicker(10 * time.Second)
@@ -84,7 +85,7 @@ func HandleSpotifyWebSocket(c *websocket.Conn) {
 		case <-done:
 			return
 		case <-ticker.C:
-			track, err := getCurrentTrack(user)
+			track, message, err := getCurrentTrack(user)
 			if err != nil {
 				c.WriteJSON(fiber.Map{
 					"error": err.Error(),
@@ -92,12 +93,25 @@ func HandleSpotifyWebSocket(c *websocket.Conn) {
 				continue
 			}
 
-			// Only send if the track is different from the last one
-			if lastTrack == nil || !tracksEqual(lastTrack, track) {
-				if err := c.WriteJSON(track); err != nil {
-					return
+			if message != "" {
+				// If we have a message (nothing playing), only send if it's different from last message
+				if message != lastMessage {
+					c.WriteJSON(fiber.Map{
+						"message":   message,
+						"isPlaying": false,
+					})
+					lastMessage = message
+					lastTrack = nil
 				}
-				lastTrack = track
+			} else if track != nil {
+				// Only send if the track is different from the last one
+				if lastTrack == nil || !tracksEqual(lastTrack, track) {
+					if err := c.WriteJSON(track); err != nil {
+						return
+					}
+					lastTrack = track
+					lastMessage = ""
+				}
 			}
 		}
 	}
@@ -117,26 +131,27 @@ func tracksEqual(a, b *NowPlayingResponse) bool {
 }
 
 // getCurrentTrack fetches the current track from Last.fm
-func getCurrentTrack(user string) (*NowPlayingResponse, error) {
+// Returns a track if playing, a message if not playing, or an error
+func getCurrentTrack(user string) (*NowPlayingResponse, string, error) {
 	response, err := http.Get(constructLastFmAPIUrl("user.getrecenttracks", user))
 	if err != nil {
-		return nil, fmt.Errorf("failed to get current track: %v", err)
+		return nil, "", fmt.Errorf("failed to get current track: %v", err)
 	}
 	defer response.Body.Close()
 
 	body, err := io.ReadAll(response.Body)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %v", err)
+		return nil, "", fmt.Errorf("failed to read response body: %v", err)
 	}
 
 	var lastFmResponse LastFmResponse
 	if err := json.Unmarshal(body, &lastFmResponse); err != nil {
-		return nil, fmt.Errorf("failed to parse Last.fm response: %v", err)
+		return nil, "", fmt.Errorf("failed to parse Last.fm response: %v", err)
 	}
 
 	recentTracks := lastFmResponse.RecentTracks.Track
 	if len(recentTracks) == 0 {
-		return nil, fmt.Errorf("no tracks found")
+		return nil, "", fmt.Errorf("no tracks found")
 	}
 
 	track := recentTracks[0]
@@ -157,7 +172,7 @@ func getCurrentTrack(user string) (*NowPlayingResponse, error) {
 	isPlaying := track.Attr.NowPlaying == "true"
 
 	if !isPlaying {
-		return nil, fmt.Errorf("nothing is playing")
+		return nil, "Nothing is playing", nil
 	}
 
 	return &NowPlayingResponse{
@@ -167,7 +182,7 @@ func getCurrentTrack(user string) (*NowPlayingResponse, error) {
 		URL:       track.URL,
 		IsPlaying: isPlaying,
 		ImageURL:  imageURL,
-	}, nil
+	}, "", nil
 }
 
 func GetCurrentTrack(c *fiber.Ctx) error {
@@ -179,10 +194,17 @@ func GetCurrentTrack(c *fiber.Ctx) error {
 		})
 	}
 
-	track, err := getCurrentTrack(user)
+	track, message, err := getCurrentTrack(user)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
+		})
+	}
+
+	if message != "" {
+		return c.JSON(fiber.Map{
+			"message":   message,
+			"isPlaying": false,
 		})
 	}
 
