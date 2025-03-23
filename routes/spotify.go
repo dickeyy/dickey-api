@@ -76,6 +76,23 @@ func HandleSpotifyWebSocket(c *websocket.Conn) {
 	var lastTrack *NowPlayingResponse
 	var lastMessage string
 
+	// Send initial data immediately when client connects
+	initialTrack, initialMessage, err := getCurrentTrack(user)
+	if err != nil {
+		c.WriteJSON(fiber.Map{
+			"error": err.Error(),
+		})
+	} else if initialMessage != "" {
+		c.WriteJSON(fiber.Map{
+			"message":   initialMessage,
+			"isPlaying": false,
+		})
+		lastMessage = initialMessage
+	} else if initialTrack != nil {
+		c.WriteJSON(initialTrack)
+		lastTrack = initialTrack
+	}
+
 	// Start polling for track updates
 	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop()
