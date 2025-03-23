@@ -6,6 +6,7 @@ import (
 	"github.com/dickeyy/dickey-api/routes"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/websocket/v2"
 	"github.com/joho/godotenv"
 	log "github.com/sirupsen/logrus"
 )
@@ -34,17 +35,24 @@ func getPort() string {
 		port = "8000"
 	}
 	return "0.0.0.0:" + port
-
 }
 
 // main function
 func main() {
-
 	// Configure CORS to allow requests from any origin
 	app.Use(cors.New(cors.Config{
 		AllowOrigins: "*",
 		AllowHeaders: "Origin, Content-Type, Accept",
 	}))
+
+	// WebSocket middleware
+	app.Use("/spotify/current-track/ws", func(c *fiber.Ctx) error {
+		if websocket.IsWebSocketUpgrade(c) {
+			c.Locals("allowed", true)
+			return c.Next()
+		}
+		return fiber.ErrUpgradeRequired
+	})
 
 	app.Get("/", func(c *fiber.Ctx) error {
 		return c.SendString("docs at https://docs.kyle.so")
@@ -82,6 +90,7 @@ func main() {
 
 	// spotify routes
 	app.Get("/spotify/current-track", routes.GetCurrentTrack)
+	app.Get("/spotify/current-track/ws", websocket.New(routes.HandleSpotifyWebSocket))
 
 	// start server
 	err := app.Listen(getPort())
