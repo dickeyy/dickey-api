@@ -92,6 +92,9 @@ func main() {
 	app.Get("/spotify/current-track", routes.GetCurrentTrack)
 	app.Get("/spotify/current-track/ws", websocket.New(routes.HandleSpotifyWebSocket))
 
+	// vinyl routes
+	app.Get("/vinyl/collection", routes.GetVinylCollection)
+
 	// start server
 	err := app.Listen(getPort())
 	if err != nil {
