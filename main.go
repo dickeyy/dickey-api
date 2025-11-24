@@ -4,6 +4,7 @@ import (
 	"os"
 
 	"github.com/dickeyy/dickey-api/routes"
+	"github.com/dickeyy/dickey-api/services"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/websocket/v2"
@@ -39,6 +40,7 @@ func getPort() string {
 
 // main function
 func main() {
+	services.InitRedis()
 	// Configure CORS to allow requests from any origin
 	app.Use(cors.New(cors.Config{
 		AllowOrigins: "*",
@@ -94,6 +96,10 @@ func main() {
 
 	// vinyl routes
 	app.Get("/vinyl/collection", routes.GetVinylCollection)
+
+	// paste routes
+	app.Post("/paste", routes.CreatePaste)
+	app.Get("/paste/:id", routes.GetPaste)
 
 	// start server
 	err := app.Listen(getPort())
